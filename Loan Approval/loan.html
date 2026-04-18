@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loan Approval Classifier</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: var(--dark);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 25px 0;
+            text-align: center;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        h2 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+        
+        h3 {
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+        
+        @media (max-width: 900px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: var(--secondary);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-success {
+            background-color: var(--success);
+        }
+        
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--dark);
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
+        .result-box {
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+            display: none;
+            text-align: center;
+        }
+        
+        .approved {
+            background-color: rgba(46, 204, 113, 0.15);
+            border: 2px solid var(--success);
+        }
+        
+        .rejected {
+            background-color: rgba(231, 76, 60, 0.15);
+            border: 2px solid var(--danger);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 25px 0;
+        }
+        
+        .feature-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        @media (max-width: 600px) {
+            .feature-inputs {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .prediction-form {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        }
+        
+        .model-performance {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        }
+        
+        .feature-importance {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        }
+        
+        .result-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        
+        .prediction-result h3 {
+            margin-top: 10px;
+            font-size: 1.6rem;
+        }
+        
+        .confidence {
+            font-size: 1.2rem;
+            margin-top: 10px;
+            font-weight: 500;
+        }
+        
+        .info-text {
+            color: #7f8c8d;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .upload-area {
+            border: 2px dashed #bdc3c7;
+            padding: 25px;
+            text-align: center;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--secondary);
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+        
+        .model-select {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Loan Approval Classifier</h1>
+            <p>Machine Learning-based loan approval prediction system</p>
+        </header>
+        
+        <div class="grid">
+            <div class="card">
+                <h2>Make a Prediction</h2>
+                <p class="info-text">Enter the applicant's information to predict loan approval.</p>
+                
+                <div class="feature-inputs">
+                    <div class="form-group">
+                        <label for="no_of_dependents">Number of Dependents:</label>
+                        <input type="number" id="no_of_dependents" min="0" value="2">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="education">Education:</label>
+                        <select id="education">
+                            <option value="Graduate">Graduate</option>
+                            <option value="Not Graduate">Not Graduate</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="self_employed">Self Employed:</label>
+                        <select id="self_employed">
+                            <option value="Yes">Yes</option>
+                            <option value="No" selected>No</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="income_annum">Annual Income (₹):</label>
+                        <input type="number" id="income_annum" min="0" value="700000">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="loan_amount">Loan Amount (₹):</label>
+                        <input type="number" id="loan_amount" min="0" value="1260000">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="loan_term">Loan Term (months):</label>
+                        <input type="number" id="loan_term" min="0" value="12">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cibil_score">CIBIL Score:</label>
+                        <input type="number" id="cibil_score" min="300" max="900" value="778">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="residential_assets_value">Residential Assets Value (₹):</label>
+                        <input type="number" id="residential_assets_value" min="0" value="3900000">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="commercial_assets_value">Commercial Assets Value (₹):</label>
+                        <input type="number" id="commercial_assets_value" min="0" value="4100000">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="luxury_assets_value">Luxury Assets Value (₹):</label>
+                        <input type="number" id="luxury_assets_value" min="0" value="1300000">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="bank_asset_value">Bank Asset Value (₹):</label>
+                        <input type="number" id="bank_asset_value" min="0" value="3600000">
+                    </div>
+                </div>
+                
+                <button class="btn" id="predictBtn">Predict Loan Approval</button>
+                
+                <div id="predictionResult" class="result-box prediction-result">
+                    <div class="result-icon" id="resultIcon">📊</div>
+                    <h3 id="resultText">Prediction Result</h3>
+                    <p class="confidence" id="confidenceText">Confidence: 0%</p>
+                </div>
+            </div>
+            
+            <div class="card model-select">
+                <h2>Model Selection</h2>
+                <p class="info-text">Select a machine learning model for prediction.</p>
+                
+                <div class="form-group">
+                    <label for="modelSelect">Choose Model:</label>
+                    <select id="modelSelect">
+                        <option value="logistic">Logistic Regression</option>
+                        <option value="random_forest" selected>Random Forest</option>
+                        <option value="gradient_boosting">Gradient Boosting</option>
+                        <option value="svm">Support Vector Machine</option>
+                    </select>
+                </div>
+                
+                <div class="upload-area">
+                    <h3>Sample Data</h3>
+                    <p class="info-text">The model is pre-trained on sample loan data.</p>
+                    <p class="info-text">Adjust the input values to see different predictions.</p>
+                </div>
+                
+                <button class="btn btn-success" id="simulateTraining">Simulate Model Training</button>
+            </div>
+        </div>
+        
+        <div class="card model-performance">
+            <h2>Model Performance</h2>
+            <p class="info-text">Comparison of different machine learning models for loan approval prediction.</p>
+            <div class="chart-container">
+                <canvas id="performanceChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="card feature-importance">
+            <h2>Feature Importance</h2>
+            <p class="info-text">Factors that most significantly influence loan approval decisions.</p>
+            <div class="chart-container">
+                <canvas id="featureImportanceChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize performance chart
+        const perfCtx = document.getElementById('performanceChart').getContext('2d');
+        const performanceChart = new Chart(perfCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Logistic Regression', 'Random Forest', 'Gradient Boosting', 'SVM'],
+                datasets: [{
+                    label: 'Accuracy (%)',
+                    data: [82, 95, 93, 87],
+                    backgroundColor: [
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(255, 159, 64, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgb(54, 162, 235)',
+                        'rgb(75, 192, 192)',
+                        'rgb(153, 102, 255)',
+                        'rgb(255, 159, 64)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Accuracy (%)'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Model Accuracy Comparison',
+                        font: {
+                            size: 16
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Initialize feature importance chart
+        const featCtx = document.getElementById('featureImportanceChart').getContext('2d');
+        const featureImportanceChart = new Chart(featCtx, {
+            type: 'bar',
+            data: {
+                labels: ['CIBIL Score', 'Annual Income', 'Loan Amount', 'Bank Assets', 'Residential Assets', 'Commercial Assets', 'Luxury Assets', 'Loan Term', 'Dependents', 'Self Employed'],
+                datasets: [{
+                    label: 'Importance',
+                    data: [0.27, 0.21, 0.18, 0.12, 0.08, 0.06, 0.04, 0.02, 0.01, 0.01],
+                    backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                    borderColor: 'rgb(75, 192, 192)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Importance'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Feature Importance (Random Forest)',
+                        font: {
+                            size: 16
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Prediction functionality
+        document.getElementById('predictBtn').addEventListener('click', function() {
+            // Get input values
+            const cibilScore = parseInt(document.getElementById('cibil_score').value);
+            const income = parseInt(document.getElementById('income_annum').value);
+            const loanAmount = parseInt(document.getElementById('loan_amount').value);
+            
+            // Simple prediction logic based on key factors
+            let approvalProbability = 0.5;
+            
+            // CIBIL score is the most important factor
+            if (cibilScore > 750) approvalProbability += 0.3;
+            else if (cibilScore > 650) approvalProbability += 0.15;
+            else if (cibilScore < 550) approvalProbability -= 0.3;
+            
+            // Income to loan amount ratio
+            const incomeToLoanRatio = income / loanAmount;
+            if (incomeToLoanRatio > 0.5) approvalProbability += 0.2;
+            else if (incomeToLoanRatio > 0.2) approvalProbability += 0.1;
+            else approvalProbability -= 0.2;
+            
+            // Ensure probability is between 0 and 1
+            approvalProbability = Math.max(0.1, Math.min(0.99, approvalProbability));
+            
+            // Determine approval
+            const isApproved = approvalProbability > 0.6;
+            
+            // Display result
+            const resultBox = document.getElementById('predictionResult');
+            const resultText = document.getElementById('resultText');
+            const confidenceText = document.getElementById('confidenceText');
+            const resultIcon = document.getElementById('resultIcon');
+            
+            if (isApproved) {
+                resultBox.className = 'result-box prediction-result approved';
+                resultText.textContent = 'Loan Approved!';
+                resultIcon.textContent = '✅';
+                confidenceText.textContent = `Confidence: ${(approvalProbability * 100).toFixed(1)}%`;
+            } else {
+                resultBox.className = 'result-box prediction-result rejected';
+                resultText.textContent = 'Loan Rejected';
+                resultIcon.textContent = '❌';
+                confidenceText.textContent = `Confidence: ${((1 - approvalProbability) * 100).toFixed(1)}%`;
+            }
+            
+            resultBox.style.display = 'block';
+        });
+        
+        // Simulate training button
+        document.getElementById('simulateTraining').addEventListener('click', function() {
+            this.textContent = 'Training...';
+            
+            // Simulate training delay
+            setTimeout(() => {
+                this.textContent = 'Training Complete!';
+                
+                // Update charts with "new" data
+                performanceChart.data.datasets[0].data = [83, 96, 94, 88];
+                performanceChart.update();
+                
+                featureImportanceChart.data.datasets[0].data = [0.28, 0.22, 0.17, 0.11, 0.09, 0.06, 0.04, 0.02, 0.01, 0.01];
+                featureImportanceChart.update();
+                
+                // Reset button after delay
+                setTimeout(() => {
+                    this.textContent = 'Simulate Model Training';
+                }, 2000);
+            }, 1500);
+        });
+        
+        // Add some interactivity to inputs
+        const inputs = document.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'translateY(-2px)';
+                this.parentElement.style.transition = 'transform 0.2s';
+            });
+            
+            input.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'translateY(0)';
+            });
+        });
+    </script>
+</body>
+</html>
